@@ -36,6 +36,7 @@ class Script(scripts.Script):
         # foreground UI
         with gr.Box():
             foregen_prompt      = gr.Textbox(label="Foreground prompt  ", lines=5, max_lines=2000)
+            foregen_negative_prompt      = gr.Textbox(label="Foreground negative prompt  ", lines=5, max_lines=2000)
             foregen_iter        = gr.Slider(minimum=1, maximum=10, step=1, label='Number of foreground images  ', value=5)
             foregen_steps       = gr.Slider(minimum=1, maximum=120, step=1, label='foreground steps  ', value=24)
             foregen_cfg_scale   = gr.Slider(minimum=1, maximum=30, step=0.1, label='foreground cfg scale  ', value=12.5)
@@ -70,6 +71,7 @@ class Script(scripts.Script):
             foregen_make_mask = gr.Checkbox(label='Mask foregrounds in blend', value=False)
         # foregen_mask_blur = gr.Slider(minimum=0, maximum=12, step=1, label='Mask blur', value=4)
         return    [foregen_prompt,
+                    foregen_negative_prompt,
                     foregen_iter,
                     foregen_steps,
                     foregen_cfg_scale,
@@ -100,6 +102,7 @@ class Script(scripts.Script):
 
 
     def run(self,p,foregen_prompt,
+                    foregen_negative_prompt,
                     foregen_iter,
                     foregen_steps,
                     foregen_cfg_scale,
@@ -209,6 +212,7 @@ class Script(scripts.Script):
 
             # foregrounds processing
             foregen_prompts = foregen_prompt.splitlines()
+            foregen_negative_prompts = foregen_negative_prompt.splitlines()
             foregrounds = []
             if foregen_clip > 0:
                 opts.data["CLIP_stop_at_last_layers"] = foregen_clip
@@ -218,6 +222,7 @@ class Script(scripts.Script):
                         opts.data["CLIP_stop_at_last_layers"] = initial_CLIP
                     break
                 p.prompt    = foregen_prompts[i] if len(foregen_prompts) > 1 else foregen_prompt
+                p.negative_prompt    = foregen_negative_prompts[i] if len(foregen_prompts) > 1 else foregen_negative_prompt
                 p.seed      = p.seed + foregen_seed_shift
                 p.subseed   = p.subseed + 1 if p.subseed_strength > 0 else p.subseed
                 p.cfg_scale = foregen_cfg_scale
