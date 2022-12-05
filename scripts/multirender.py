@@ -6,6 +6,7 @@ import cv2
 
 import modules.scripts as scripts
 from modules import sd_samplers
+from modules.processing import process_images
 from random import randint, shuffle
 import random
 from skimage.util import random_noise
@@ -153,18 +154,19 @@ class Script(scripts.Script):
                 index = total_foreground-index-1
             image = Image.new("RGBA", background.size)
             image.paste(background, (0,0), background)
-            alternator = -1 if index % 2 == 0 else 1
-            if total_foreground % 2 == 0:
-                foreground_shift  = background.size[0]/2-foreground.size[0]/2 + background.size[0]/(total_foreground)*alternator*ceil(index/2)*x_shift - background.size[0]/(total_foreground)/2
-            else:
-                index_shift = index-(index % 2)
-                if index == 0:
-                    foreground_shift  = background.size[0]/2-foreground.size[0]/2
-                else:
-                    foreground_shift  = background.size[0]/2-foreground.size[0]/2 + background.size[0]/(total_foreground)*alternator*ceil(index/2)*x_shift
-            x_shift = int(foreground_shift)
-            y_shift = ceil(index/2)*y_shift
-            image.paste(foreground, (x_shift,background.size[1]-foreground.size[1]+y_shift), foreground)
+            #alternator = -1 if index % 2 == 0 else 1
+            #if total_foreground % 2 == 0:
+            #    foreground_shift  = background.size[0]/2-foreground.size[0]/2 + background.size[0]/(total_foreground)*alternator*ceil(index/2)*x_shift - background.size[0]/(total_foreground)/2
+            #else:
+            #    index_shift = index-(index % 2)
+            #    if index == 0:
+            #        foreground_shift  = background.size[0]/2-foreground.size[0]/2
+            #    else:
+            #        foreground_shift  = background.size[0]/2-foreground.size[0]/2 + background.size[0]/(total_foreground)*alternator*ceil(index/2)*x_shift
+            #x_shift = int(foreground_shift)
+            #y_shift = ceil(index/2)*y_shift
+            #image.paste(foreground, (x_shift,background.size[1]-foreground.size[1]+y_shift), foreground)
+            image.paste(foreground, (x_shift,y_shift), foreground)
             return image
 
         fix_seed(p)
@@ -211,7 +213,20 @@ class Script(scripts.Script):
             background_image = proc.images[0]
 
             # foregrounds processing
-            foregen_prompts = foregen_prompt.splitlines()
+            foregen_prompts_lines = foregen_prompt.splitlines()
+            foregen_prompts = []
+            foregen_seeds = []
+            foregen_thresholds = []
+            x_shifts = []
+            y_shifts = []
+            for line in foregen_prompts_lines:
+                if '|' in line:
+                    parts = line.split('|')
+                    foregen_prompts.append(parts[0])
+                    foregen_seeds.append(int(parts[1]))
+                    foregen_thresholds.append(int(parts[2]))
+                    x_shifts.append(int(parts[3]))
+                    y_shifts.append(int(parts[4]))
             foregen_negative_prompts = foregen_negative_prompt.splitlines()
             foregrounds = []
             if foregen_clip > 0:
@@ -221,9 +236,12 @@ class Script(scripts.Script):
                     if foregen_clip > 0:
                         opts.data["CLIP_stop_at_last_layers"] = initial_CLIP
                     break
-                p.prompt    = foregen_prompts[i] if len(foregen_prompts) > 1 else foregen_prompt
+                #p.prompt    = foregen_prompts[i] if len(foregen_prompts) > 1 else foregen_prompt
+                p.prompt    = foregen_prompts[i]
                 p.negative_prompt    = foregen_negative_prompts[i] if len(foregen_prompts) > 1 else foregen_negative_prompt
                 p.seed      = p.seed + foregen_seed_shift
+                if len(foregen_seeds) > 0:
+                    p.seed = foregen_seeds[i]
                 p.subseed   = p.subseed + 1 if p.subseed_strength > 0 else p.subseed
                 p.cfg_scale = foregen_cfg_scale
                 p.steps     = foregen_steps
@@ -256,9 +274,13 @@ class Script(scripts.Script):
                 foreground_image      = foregrounds[f]
                 # gen depth map
                 foreground_image_mask = sdmg.calculate_depth_map_for_waifus(foreground_image)
+                images.save_image(foreground_image_mask, p.outpath_samples, "depth_")
                 # cut depth
+                foregen_treshold = foregen_thresholds[f] if len(foregen_thresholds) > 0 else foregen_treshold
                 foreground_image      = cut_depth_mask(foreground_image,foreground_image_mask,foregen_treshold)
                 # paste foregrounds onto background
+                foregen_x_shift = x_shifts[f]
+                foregen_y_shift = y_shifts[f]
                 background_image      = paste_foreground(background_image,foreground_image,random_order[f],foregen_iter,foregen_x_shift,foregen_y_shift,foregen_reverse_order)
                 #make mask
                 if foregen_make_mask:
