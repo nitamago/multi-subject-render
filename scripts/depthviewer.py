@@ -24,7 +24,7 @@ def module_from_file(module_name, file_path):
 
 class Script(scripts.Script):
     def title(self):
-        return "Multi Subject Rendering"
+        return "Depth viewer"
 
     def show(self, is_img2img):
         return not is_img2img
@@ -42,36 +42,10 @@ class Script(scripts.Script):
         fix_seed(p)
         p.do_not_save_samples = True
 
-        foregen_size_x = p.width  if foregen_size_x == 64 else foregen_size_x
-        foregen_size_y = p.height if foregen_size_y == 64 else foregen_size_y
-        foregen_blend_size_x = p.width  if foregen_blend_size_x == 64 else foregen_blend_size_x
-        foregen_blend_size_y = p.height if foregen_blend_size_y == 64 else foregen_blend_size_y
-
-        o_sampler_name = p.sampler_name
-        o_prompt    = p.prompt
-        o_cfg_scale = p.cfg_scale
-        o_steps     = p.steps
-        o_do_not_save_samples = p.do_not_save_samples
-        o_width     = p.width
-        o_height    = p.height
-        o_denoising_strength = p.denoising_strength
-        o_firstphase_width   = p.firstphase_width
-        o_firstphase_height  = p.firstphase_height
-
         n_iter=p.n_iter
         image_list = []
         for j in range(n_iter):
             p.n_iter=1
-            p.prompt = o_prompt
-            p.sampler_name = o_sampler_name
-            p.cfg_scale = o_cfg_scale
-            p.steps = o_steps
-            p.do_not_save_samples = o_do_not_save_samples
-            p.width = o_width
-            p.height = o_height
-            p.denoising_strength = o_denoising_strength
-            p.firstphase_width = o_firstphase_width
-            p.firstphase_height = o_firstphase_height
             proc = process_images(p)
             
             image_list.append(proc.images[0])
