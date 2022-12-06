@@ -39,6 +39,21 @@ class Script(scripts.Script):
         sdmg = module_from_file("simple_depthmap",'extensions/multi-subject-render/scripts/simple_depthmap.py')
         sdmg = sdmg.SimpleDepthMapGenerator() #import midas
 
+        def cut_depth_mask(img,mask_img,foregen_treshold):
+            img = img.convert("RGBA")
+            mask_img = mask_img.convert("RGBA")
+            mask_datas = mask_img.getdata()
+            datas = img.getdata()
+            treshold = foregen_treshold
+            newData = []
+            for i in range(len(mask_datas)):
+                if mask_datas[i][0] >= foregen_treshold and mask_datas[i][1] >= foregen_treshold and mask_datas[i][2] >= foregen_treshold:
+                    newData.append(datas[i])
+                else:
+                    newData.append((255, 255, 255, 0))
+            mask_img.putdata(newData)
+            return mask_img
+
         fix_seed(p)
         p.do_not_save_samples = True
 
@@ -48,10 +63,16 @@ class Script(scripts.Script):
             p.n_iter=1
             proc = process_images(p)
             
-            image_list.append(proc.images[0])
+            foreground_image = proc.images[0]
+            image_list.append(foreground_image)
             
-            foreground_image_mask = sdmg.calculate_depth_map_for_waifus(proc.images[0])
+            foreground_image_mask = sdmg.calculate_depth_map_for_waifus(foreground_image)
             image_list.append(foreground_image_mask)
+
+            for i in range(1, 11):
+                treshold = 255  * i / 10
+                foreground_image = cut_depth_mask(foreground_image, foreground_image_mask, treshold)
+                image_list.append(foreground_image)
 
         proc.images = image_list
         return proc
