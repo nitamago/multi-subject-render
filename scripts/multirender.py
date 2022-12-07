@@ -274,7 +274,6 @@ class Script(scripts.Script):
                 foreground_image      = foregrounds[f]
                 # gen depth map
                 foreground_image_mask = sdmg.calculate_depth_map_for_waifus(foreground_image)
-                images.save_image(foreground_image_mask, p.outpath_samples, "depth_")
                 # cut depth
                 foregen_treshold = foregen_thresholds[f] if len(foregen_thresholds) > 0 else foregen_treshold
                 foreground_image      = cut_depth_mask(foreground_image,foreground_image_mask,foregen_treshold)
