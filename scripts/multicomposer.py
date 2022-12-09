@@ -82,9 +82,6 @@ class Script(scripts.Script):
             return image
 
         fix_seed(p)
-
-        foregen_size_x = p.width  if foregen_size_x == 64 else foregen_size_x
-        foregen_size_y = p.height if foregen_size_y == 64 else foregen_size_y
         foregen_blend_size_x = p.width  if foregen_blend_size_x == 64 else foregen_blend_size_x
         foregen_blend_size_y = p.height if foregen_blend_size_y == 64 else foregen_blend_size_y
 
@@ -127,13 +124,13 @@ class Script(scripts.Script):
             for num, line in enumerate(material_parameter_lines):
                 if num == 0:
                     continue
-                if '|' in line:
-                    parts = line.split('|')
-                    thresholds.append(int(parts[0]))
-                    x_shifts.append(int(parts[1]))
-                    y_shifts.append(int(parts[2]))
-            
+                parts = line.split('|')
+                thresholds.append(int(parts[0]))
+                x_shifts.append(int(parts[1]))
+                y_shifts.append(int(parts[2]))
+
             background_image = Image.open(image_paths.pop(0))
+
             foregrounds = image_paths
             foreground_masked = bgr.remove_background(foregrounds)
 
@@ -195,3 +192,4 @@ class Script(scripts.Script):
             p.subseed = p.subseed + 1 if p.subseed_strength  > 0 else p.subseed
             p.seed    = p.seed    + 1 if p.subseed_strength == 0 else p.seed
         return final_blend
+
