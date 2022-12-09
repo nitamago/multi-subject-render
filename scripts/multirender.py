@@ -329,7 +329,19 @@ class Script(scripts.Script):
                 negative_prompt=p.negative_prompt,
                 eta=p.eta
                 )
+            
+            param_dict = {}
+            for i in range(foregen_iter):
+                param_dict[f'fg{i}_prompt'] = foregen_prompts[i]
+                param_dict[f'fg{i}_neg_prompt'] = foregen_negative_prompts[i]
+                param_dict[f'fg{i}_seed'] = foregen_seeds[i]
+                param_dict[f'fg{i}_threshold'] = foregen_thresholds[i]
+                param_dict[f'fg{i}_x_shift'] = x_shifts[i]
+                param_dict[f'fg{i}_y_shift'] = y_shifts[i]
+            img2img_processing.extra_generation_params.update(param_dict)
+            
             final_blend = process_images(img2img_processing)
             p.subseed = p.subseed + 1 if p.subseed_strength  > 0 else p.subseed
             p.seed    = p.seed    + 1 if p.subseed_strength == 0 else p.seed
+            
         return final_blend
