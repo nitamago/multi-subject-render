@@ -38,16 +38,12 @@ class Script(scripts.Script):
 
         # foreground UI
         with gr.Box():
-            images      = gr.Textbox(label="Image paths  ", lines=5, max_lines=2000)
-            material_parameters     = gr.Textbox(label="Material parameters  ", lines=5, max_lines=2000)
+            images = gr.Textbox(label="Image paths  ", lines=5, max_lines=2000)
+            material_parameters = gr.Textbox(label="Material parameters: {threshold}|{x_shift}|{y_shifts} ", lines=5, max_lines=2000)
 
         # blend UI
         with gr.Box():
-            foregen_blend_prompt             = gr.Textbox(label="final blend prompt", lines=2, max_lines=2000)
-            foregen_blend_steps              = gr.Slider(minimum=1, maximum=120, step=1, label='blend steps   ', value=64)
-            foregen_blend_cfg_scale          = gr.Slider(minimum=1, maximum=30, step=0.1, label='blend cfg scale  ', value=7.5)
             foregen_blend_denoising_strength = gr.Slider(minimum=0.1, maximum=1, step=0.01, label='blend denoising strength   ', value=0.42)
-            foregen_blend_sampler            = gr.Dropdown(label="blend sampler", choices=img2img_samplers_names, value="DDIM")
             with gr.Row():
                 foregen_blend_size_x  = gr.Slider(minimum=64, maximum=2048, step=64, label='blend width   (64 = same size as background) ', value=64)
                 foregen_blend_size_y  = gr.Slider(minimum=64, maximum=2048, step=64, label='blend height  (64 = same size as background) ', value=64)
@@ -58,11 +54,7 @@ class Script(scripts.Script):
         # foregen_mask_blur = gr.Slider(minimum=0, maximum=12, step=1, label='Mask blur', value=4)
         return    [images,
                     material_parameters,
-                    foregen_blend_prompt,
-                    foregen_blend_steps,
-                    foregen_blend_cfg_scale,
                     foregen_blend_denoising_strength,
-                    foregen_blend_sampler,
                     foregen_blend_size_x,
                     foregen_blend_size_y,
                     foregen_face_correction,
@@ -71,11 +63,7 @@ class Script(scripts.Script):
 
     def run(self,p,images,
                     material_parameters,
-                    foregen_blend_prompt,
-                    foregen_blend_steps,
-                    foregen_blend_cfg_scale,
                     foregen_blend_denoising_strength,
-                    foregen_blend_sampler,
                     foregen_blend_size_x,
                     foregen_blend_size_y,
                     foregen_face_correction,
@@ -116,7 +104,6 @@ class Script(scripts.Script):
             p.n_iter=1
 
             #background image processing
-            p.prompt = o_prompt
             p.sampler_name = o_sampler_name
             p.cfg_scale = o_cfg_scale
             p.steps = o_steps
@@ -133,19 +120,20 @@ class Script(scripts.Script):
             image_paths = images.splitlines()
             material_parameter_lines = material_parameters.splitlines()
             assert len(image_paths) == len(material_parameter_lines), 'Image count not match Material parameters'
-        
+
             thresholds = []
             x_shifts = []
             y_shifts = []
-            for line in material_parameter_lines:
+            for num, line in enumerate(material_parameter_lines):
+                if num == 0:
+                    continue
                 if '|' in line:
                     parts = line.split('|')
                     thresholds.append(int(parts[0]))
                     x_shifts.append(int(parts[1]))
                     y_shifts.append(int(parts[2]))
-
+            
             background_image = Image.open(image_paths.pop(0))
-
             foregrounds = image_paths
             foreground_masked = bgr.remove_background(foregrounds)
 
@@ -180,18 +168,18 @@ class Script(scripts.Script):
                 sd_model=p.sd_model,
                 outpath_samples=p.outpath_samples,
                 outpath_grids=p.outpath_grids,
-                prompt=foregen_blend_prompt,
+                prompt=o_prompt,
                 styles=p.styles,
                 seed=p.seed,
                 subseed=p.subseed,
                 subseed_strength=p.subseed_strength,
                 seed_resize_from_h=p.seed_resize_from_h,
                 seed_resize_from_w=p.seed_resize_from_w,
-                sampler_name=foregen_blend_sampler,
+                sampler_name=o_sampler_name,
                 batch_size=p.batch_size,
                 n_iter=p.n_iter,
-                steps=foregen_blend_steps,
-                cfg_scale=foregen_blend_cfg_scale,
+                steps=o_steps,
+                cfg_scale=o_cfg_scale,
                 width=foregen_blend_size_x,
                 height=foregen_blend_size_y,
                 restore_faces=foregen_face_correction,
